@@ -500,3 +500,30 @@ test("renderTodoCard folds dropped tasks next to done ones in a long list", () =
 	assert.match(plain[3], /^│ ○ Task 9 +│$/);
 	assert.match(plain[12], /^│ … 3 more +│$/);
 });
+
+test("a rule rail card keeps one physical line per task while the dock card still wraps", (t) => {
+	const found = cardStyle();
+	t.after(() => setCardStyle(found));
+	setCardStyle(CARD_STYLE.RULE);
+	const state = applyTodo(emptyTodo(), { action: "write", tasks: [
+		{ title: "A long task that would certainly wrap at forty columns", status: "in_progress", note: "with a note" },
+	] }, 1).state;
+	const rail = renderTodoCard(state, plainTheme, 46, { scrollable: true, collapsed: false, staleTurns: 0, singleLine: true }).map(stripAnsi);
+	assert.equal(rail.length, 2, "the heading plus exactly one task row");
+	assert.ok(rail[1]!.endsWith("…"), rail[1]);
+	assert.ok(!rail[1]!.includes("with a note"), "the note is what yields first");
+	const dock = renderTodoCard(state, plainTheme, 46, { scrollable: true, collapsed: false, staleTurns: 0 }).map(stripAnsi);
+	assert.ok(dock.length > 2, "the dock card keeps its wrapping");
+});
+
+test("under rule the Todos heading shows only the shortcut key, and neon keeps the action word", (t) => {
+	const found = cardStyle();
+	t.after(() => setCardStyle(found));
+	setCardStyle(CARD_STYLE.RULE);
+	const rule = renderTodoCard(seeded(), plainTheme, 70, { collapsed: false, staleTurns: 0, collapseKey: "alt+t" }).map(stripAnsi);
+	assert.match(rule[0]!, /alt\+t$/);
+	assert.doesNotMatch(rule[0]!, /alt\+t (?:collapse|expand)/);
+	setCardStyle(CARD_STYLE.NEON);
+	const neon = renderTodoCard(seeded(), plainTheme, 70, { collapsed: false, staleTurns: 0, collapseKey: "alt+t" }).map(stripAnsi);
+	assert.match(neon[0]!, /alt\+t collapse/);
+});

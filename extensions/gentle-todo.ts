@@ -136,7 +136,9 @@ export default function gentleTodo(pi: ExtensionAPI, env: NodeJS.ProcessEnv = pr
 		current.host?.requestRender();
 	};
 
-	const todoCard = (current: TodoSession, theme: Parameters<typeof renderTodoCard>[1], spacer: boolean): Component & { dispose(): void; digest(): string; scrollBy(lines: number): void } => {
+	const todoCard = (current: TodoSession, theme: Parameters<typeof renderTodoCard>[1], host: "dock" | "rail"): Component & { dispose(): void; digest(): string; scrollBy(lines: number): void } => {
+		// The dock reserves an extra row; the rail draws every task on one line.
+		const spacer = host === "dock";
 		let hovered = false;
 		let body: string[] = [];
 		let collapsed = current.collapsed;
@@ -163,6 +165,7 @@ export default function gentleTodo(pi: ExtensionAPI, env: NodeJS.ProcessEnv = pr
 					collapseKey,
 					hovered,
 					scrollable: true,
+					singleLine: host === "rail",
 				});
 				if (collapsed !== current.collapsed) {
 					collapsed = current.collapsed;
@@ -236,8 +239,8 @@ export default function gentleTodo(pi: ExtensionAPI, env: NodeJS.ProcessEnv = pr
 		current.ui.setWidget(WIDGET_KEY, (tui, theme) => {
 			snapshot.host = tui;
 			snapshot.tui = tui;
-			const bottom = todoCard(snapshot, theme, true);
-			const rail = todoCard(snapshot, theme, false);
+			const bottom = todoCard(snapshot, theme, "dock");
+			const rail = todoCard(snapshot, theme, "rail");
 			snapshot.scrollTodo = (lines) => {
 				// Cached rail lines do not re-render when a narrow→wide resize
 				// restores the sidebar. Select ownership from the live layout.
