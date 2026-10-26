@@ -1,4 +1,4 @@
-import { ScrollView, VStack, visibleWidth, type Component, type TUI, type TuiMouseEvent } from "@earendil-works/pi-tui";
+import { ScrollView, VStack, truncateToWidth, visibleWidth, type Component, type TUI, type TuiMouseEvent } from "@earendil-works/pi-tui";
 import { sidebarState, type SidebarRail } from "./shell-sidebar.ts";
 import type { ShellBarTheme } from "./shell-bar.ts";
 import { CARD_STYLE, cardStyle, type CardStyle } from "./shell-card.ts";
@@ -277,8 +277,15 @@ export function installSidebar(tui: TUI, theme: ShellBarTheme, placement: () => 
 				railLines.push(...section.lines.map((line) => " ".repeat(RAIL_PADDING) + line + " ".repeat(RAIL_PADDING)));
 				hits.push({ key: section.key, component: section.component, startY, height: section.lines.length, width: contentWidth - RAIL_PADDING * 2 });
 			}
+			// An over-wide section line used to disable the whole rail, which dumped the
+			// plan and the changes into the bottom dock. A clipped line is recoverable;
+			// a vanished sidebar is not, so clamp to the content width instead.
+			for (let index = 0; index < railLines.length; index++) {
+				const line = railLines[index]!;
+				if (visibleWidth(line) > contentWidth) railLines[index] = truncateToWidth(line, contentWidth, "…");
+			}
 			// Height is owned by the native ScrollView, never by the transcript.
-			const active = railLines.length > 0 && railLines.every((line) => visibleWidth(line) <= contentWidth);
+			const active = railLines.length > 0;
 			headerLines = headerActive && headerPlacement() === "top" ? preparedHeaderLines : [];
 			prepared = { revision: cache.revision, width, mode: host.mode, headerPlacement: headerPlacement(), cardStyle: style, root, theme, parts, digests, contentWidth, active, lines: railLines, hits, headerLines, headerActive: headerLines.length > 0 };
 			state.active = active;

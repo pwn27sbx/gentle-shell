@@ -652,13 +652,26 @@ test("cleanup restores the native layout and bottom paint without disposing widg
 	assert.ok(f.renders() >= 2);
 });
 
-test("unsupported roots, empty rails and overflowing parts leave native layout intact", (t) => {
-	for (const lines of [[], ["x".repeat(100)]]) {
+test("an empty rail leaves the native layout intact while an over-wide line is clamped, never disabling the rail", (t) => {
+	{
 		const f = fixture();
-		sidebarPart(f.tui, "footer", { render: () => lines, invalidate() {} });
+		sidebarPart(f.tui, "footer", { render: () => [], invalidate() {} });
 		t.after(installSidebar(f.tui, theme));
 		assert.equal(f.root[NODE]().type, "vstack");
 		assert.equal(sidebarState(f.tui).active, false);
+	}
+	{
+		// Contract change: an over-wide line used to switch the whole rail off.
+		// Clamping keeps the plan and the changes on screen, clipped.
+		const f = fixture();
+		const wide = "x".repeat(100);
+		sidebarPart(f.tui, "footer", { render: () => [wide], invalidate() {} });
+		t.after(installSidebar(f.tui, theme));
+		const scroll = rail(f);
+		assert.equal(sidebarState(f.tui).active, true, "the rail stays live");
+		const painted = scroll.render(50);
+		assert.ok(painted.every((line) => visibleWidth(line) <= 50), "every rail line fits the content width");
+		assert.ok(painted.some((line) => line.includes("…")), "the overflow is clipped, not dropped");
 	}
 	const f = fixture();
 	Reflect.deleteProperty(f.root, NODE);
