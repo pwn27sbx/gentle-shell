@@ -493,3 +493,29 @@ test("a call card awaits its result until pi finishes the row or a result render
 	assert.equal(cardRunningLine(CARD_TONE.WARNING, plainTheme, 20), `│ running…${" ".repeat(8)} │`);
 	for (const width of [0, 1, 2, 3, 4, 5, 6, 7, 8]) assert.ok(visibleWidth(cardRunningLine(CARD_TONE.WARNING, plainTheme, width)) <= width);
 });
+
+// The rule style keeps the same layout and drops the frame: one heading line,
+// one bar per body row, no painted background.
+test("a rule card draws one heading line, a bar per body row and no frame", () => {
+	setCardStyle(CARD_STYLE.RULE);
+	const lines = renderCard(card(), plainTheme, 40, { expanded: true });
+	assert.equal(lines[0], "✿ Gentle AI · review preflight");
+	assert.ok(lines.slice(1).every((line) => line.startsWith("│ ")), "every body row hangs from the bar");
+	assert.ok(!lines.some((line) => /[╭╮╰╯]/.test(line)), "no frame glyphs anywhere");
+});
+
+test("a rule heading keeps the hint last and drops it before displacing the title", () => {
+	setCardStyle(CARD_STYLE.RULE);
+	const wide = renderCard(card({ title: "bash" }), plainTheme, 60, { expanded: true, hint: "ctrl+o to expand" });
+	assert.ok(wide[0]!.endsWith("ctrl+o to expand"), wide[0]);
+	assert.ok(visibleWidth(wide[0]!) <= 60);
+	const narrow = renderCard(card({ title: "bash" }), plainTheme, 14, { expanded: true, hint: "ctrl+o to expand" });
+	assert.ok(!narrow[0]!.includes("ctrl+o"), "the hint yields before the title");
+	assert.ok(visibleWidth(narrow[0]!) <= 14, "the heading never exceeds the card width");
+});
+
+test("rule panels draw no float padding rows, so the heading is the first row", () => {
+	setCardStyle(CARD_STYLE.RULE);
+	assert.equal(panelHeaderRow(plainTheme, 40), 0);
+	assert.equal(panelExtraRows(plainTheme, 40), 0);
+});

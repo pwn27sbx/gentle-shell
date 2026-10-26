@@ -8,9 +8,9 @@ import { CARD_STYLE_SCHEMA, parseCardStyleFile, resolveCardStyle, writeCardStyle
 
 const home = () => mkdtempSync(join(tmpdir(), "gentle-card-style-"));
 
-test("a missing preference means the float style", () => {
+test("a missing preference means the rule style, while malformed files keep the float fallback", () => {
 	const dir = home();
-	assert.deepEqual(resolveCardStyle({ gentlePiConfigHome: dir }), { style: "float", source: "default", malformed: false, globalFile: join(dir, "card-style.json") });
+	assert.deepEqual(resolveCardStyle({ gentlePiConfigHome: dir }), { style: "rule", source: "default", malformed: false, globalFile: join(dir, "card-style.json") });
 });
 
 test("the preference round-trips through the atomic writer", () => {
@@ -21,6 +21,8 @@ test("the preference round-trips through the atomic writer", () => {
 	assert.deepEqual(resolveCardStyle({ gentlePiConfigHome: dir }), { style: "float", source: "global_file", malformed: false, globalFile: path });
 	writeCardStyle("neon", { gentlePiConfigHome: dir });
 	assert.equal(resolveCardStyle({ gentlePiConfigHome: dir }).style, "neon");
+	writeCardStyle("rule", { gentlePiConfigHome: dir });
+	assert.equal(resolveCardStyle({ gentlePiConfigHome: dir }).style, "rule", "the rule style round-trips");
 	assert.deepEqual(readdirSync(dir), ["card-style.json"], "no temporary file survives the rename");
 });
 

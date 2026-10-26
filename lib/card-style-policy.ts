@@ -5,8 +5,9 @@ import { gentlePiConfigHome } from "./agent-home.ts";
 import { CARD_STYLE, type CardStyle } from "./shell-card.ts";
 
 // The conversation card style chosen in Gentle → Customize. A missing file
-// means the borderless float style; a malformed or unreadable one also reads
-// as float, and the writer refuses to replace it so a hand edit is never lost.
+// means the rule style (the default since it landed); a malformed or unreadable
+// one reads as float, and the writer refuses to replace it so a hand edit is
+// never lost.
 // There is no environment override.
 export const CARD_STYLE_SCHEMA = "gentle-pi.card-style/v1";
 const CARD_STYLE_FILE = "card-style.json";
@@ -19,7 +20,7 @@ export interface CardStyleResolution {
 }
 
 function isCardStyle(value: unknown): value is CardStyle {
-	return value === CARD_STYLE.NEON || value === CARD_STYLE.FLOAT;
+	return value === CARD_STYLE.NEON || value === CARD_STYLE.FLOAT || value === CARD_STYLE.RULE;
 }
 
 export function parseCardStyleFile(raw: string): CardStyle | undefined {
@@ -38,7 +39,9 @@ export function resolveCardStyle(options: CardStyleOptions = {}): CardStyleResol
 		return { style: style ?? CARD_STYLE.FLOAT, source: "global_file", malformed: style === undefined, globalFile };
 	} catch (error) {
 		const missing = typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT";
-		return { style: CARD_STYLE.FLOAT, source: missing ? "default" : "global_file", malformed: !missing, globalFile };
+		// No preference at all is the new default; a file we could not read or
+		// decode is a different case and keeps the documented float fallback.
+		return { style: missing ? CARD_STYLE.RULE : CARD_STYLE.FLOAT, source: missing ? "default" : "global_file", malformed: !missing, globalFile };
 	}
 }
 

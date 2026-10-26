@@ -33,6 +33,10 @@ export interface CardTheme {
 export const CARD_STYLE = {
 	NEON: "neon",
 	FLOAT: "float",
+	// Rule-and-text chrome: no frame, no painted background. The heading is one
+	// line and every body row hangs from a single bar. The shell's layout is the
+	// same; only the finish changes.
+	RULE: "rule",
 } as const;
 
 export type CardStyle = (typeof CARD_STYLE)[keyof typeof CARD_STYLE];
@@ -41,7 +45,15 @@ const CARD_STYLE_SLOT = Symbol.for("gentle-pi.card-style");
 const styleState = globalThis as typeof globalThis & { [CARD_STYLE_SLOT]?: unknown };
 
 export function cardStyle(): CardStyle {
-	return styleState[CARD_STYLE_SLOT] === CARD_STYLE.NEON ? CARD_STYLE.NEON : CARD_STYLE.FLOAT;
+	const slot = styleState[CARD_STYLE_SLOT];
+	if (slot === CARD_STYLE.NEON) return CARD_STYLE.NEON;
+	if (slot === CARD_STYLE.RULE) return CARD_STYLE.RULE;
+	return CARD_STYLE.FLOAT;
+}
+
+/** The rule style draws its own geometry instead of the frame's. */
+function ruleStyle(): boolean {
+	return cardStyle() === CARD_STYLE.RULE;
 }
 
 export function setCardStyle(style: CardStyle): void {
@@ -141,6 +153,16 @@ function frame(theme: CardTheme, tone: CardTone, text: string): string {
 export function cardTop(card: Card, theme: CardTheme, width: number, hint?: string): string {
 	const targetWidth = Math.max(0, Math.floor(width));
 	if (targetWidth === 0) return "";
+	if (ruleStyle()) {
+		// One heading line, no frame: the hint rides the end of the title and is
+		// the first thing dropped when the row cannot hold both.
+		const head = theme.fg(TITLE_ROLE[card.tone], `${card.glyph ?? CARD_GLYPH} ${card.title}`);
+		const subtitle = card.subtitle ? ` ${theme.fg(SUBTITLE_ROLE, `${SEPARATOR} ${card.subtitle}`)}` : "";
+		const withHint = hint ? `${head}${subtitle}  ${theme.fg(HINT_ROLE, hint)}` : `${head}${subtitle}`;
+		const withoutHint = `${head}${subtitle}`;
+		const line = visibleWidth(withHint) <= targetWidth ? withHint : withoutHint;
+		return truncateToWidth(line, targetWidth, "…");
+	}
 	if (targetWidth < 5) {
 		const left = theme.fg(FRAME_ROLE[card.tone], "╭");
 		if (targetWidth === 1) return left;
@@ -162,6 +184,11 @@ export function cardTop(card: Card, theme: CardTheme, width: number, hint?: stri
 export function cardLine(text: string, tone: CardTone, theme: CardTheme, width: number): string {
 	const targetWidth = Math.max(0, Math.floor(width));
 	if (targetWidth === 0) return "";
+	if (ruleStyle()) {
+		const bar = theme.fg(FRAME_ROLE[tone], "│");
+		if (targetWidth === 1) return bar;
+		return truncateToWidth(`${bar} ${truncateToWidth(text, targetWidth - 2, "…")}`, targetWidth, "…");
+	}
 	const left = theme.fg(FRAME_ROLE[tone], chrome.side);
 	if (targetWidth === 1) return left;
 	if (targetWidth === 2) return left + frame(theme, tone, "│");
@@ -176,6 +203,8 @@ export function cardLine(text: string, tone: CardTone, theme: CardTheme, width: 
 export function cardBottom(tone: CardTone, theme: CardTheme, width: number, content?: string): string {
 	const targetWidth = Math.max(0, Math.floor(width));
 	if (targetWidth === 0) return "";
+	// The rule style has no closing rule; the vertical air comes from the caller.
+	if (ruleStyle()) return "";
 	const left = theme.fg(FRAME_ROLE[tone], chrome.bottomLeft);
 	if (targetWidth === 1) return left;
 	if (content === undefined || visibleWidth(content) === 0) return left + frame(theme, tone, `${rule(targetWidth - 2)}${chrome.bottomRight}`);
@@ -189,13 +218,18 @@ export function cardInnerWidth(width: number): number {
 	return Math.max(1, width - FRAME_COLUMNS);
 }
 
+/** Columns a card can paint inside, in the active style: the rule keeps one bar and one space. */
+function contentColumns(width: number): number {
+	return ruleStyle() ? Math.max(1, Math.floor(width) - 2) : cardInnerWidth(width);
+}
+
 /** Shared body for whole cards and separate call/result components. Budgets apply after wrapping. */
 export function cardBodyRows(
 	rows: readonly string[], tone: CardTone, theme: CardTheme, width: number,
 	options: CardRenderOptions,
 ): string[] {
 	if (width <= 0) return [];
-	const wrapped = rows.flatMap((row) => row.split("\n").flatMap((line) => line === "" ? [""] : wrapTextWithAnsi(line, cardInnerWidth(width))));
+	const wrapped = rows.flatMap((row) => row.split("\n").flatMap((line) => line === "" ? [""] : wrapTextWithAnsi(line, contentColumns(width))));
 	const limit = Math.max(0, Math.floor(options.previewRows ?? 3));
 	const shown = options.expanded ? wrapped : wrapped.slice(0, limit);
 	return shown.map((line) => cardLine(line, tone, theme, width));
@@ -306,7 +340,7 @@ export function floatRows(tone: CardTone, theme: CardTheme, width: number, rende
 			...(head.length > 0 ? [blank, ...head] : []),
 			...(body.length > 0 && (head.length > 0 || afterHeading) ? [blank] : []),
 			...body,
-			...(bottom === undefined ? [] : [bottom]),
+			...(bottom === undefined || (ruleStyle() && bottom === "") ? [] : [bottom]),
 		];
 	});
 	return paintFloat(rows, open);
@@ -331,6 +365,7 @@ function paintFloat(rows: readonly string[], open: string): string[] {
  * columns narrower than the outlined frame, never re-wraps or clips them.
  */
 export function panelInnerWidth(theme: CardTheme, width: number, tone: CardTone = CARD_TONE.INFO): number {
+	if (ruleStyle()) return contentColumns(width);
 	return floatOpener(theme, tone, width) ? cardInnerWidth(Math.floor(width) - FLOAT_MARGIN * 2) : cardInnerWidth(width);
 }
 
@@ -366,7 +401,8 @@ export function renderCard(card: Card, theme: CardTheme, width: number, options:
 	if (open) return paintFloat(withChrome(FLOAT_CHROME, () => floatPanel(card, theme, Math.floor(width) - FLOAT_MARGIN * 2, options)), open);
 	const top = cardTop(card, theme, width, options.hint);
 	const bottom = cardBottom(card.tone, theme, width);
-	return [top, ...cardText(card, theme, cardInnerWidth(width), options.expanded).map((line) => cardLine(line, card.tone, theme, width)), bottom];
+	// The rule style closes with nothing; never append an empty row for it.
+	return [top, ...cardText(card, theme, contentColumns(width), options.expanded).map((line) => cardLine(line, card.tone, theme, width)), ...(ruleStyle() && bottom === "" ? [] : [bottom])];
 }
 
 /** Body text of a legacy card or panel, wrapped to its content columns, before the side rails. */

@@ -3233,12 +3233,12 @@ test("customize Cards rows persist the card style and switch live conversation c
 	t.after(() => setCardStyle(found));
 	const { pi, commands } = fakePi();
 	gentleShell(pi, { GENTLE_PI_CONFIG_HOME: home });
-	assert.equal(cardStyle(), CARD_STYLE.FLOAT, "no preference file means float");
+	assert.equal(cardStyle(), CARD_STYLE.RULE, "no preference file means rule");
 	const { ctx, ui, overlayReady } = fakeContext();
 	const pending = commands.get("gentle:customize")!.handler("", ctx);
 	await overlayReady;
-	assert.ok(findCustomizeRow(ui, "Card style: float (current)"));
-	assert.match(ui.overlayView!.render(90).join("\n"), /Cards · 2\/4/);
+	assert.ok(findCustomizeRow(ui, "Card style: rule (current)"));
+	assert.match(ui.overlayView!.render(90).join("\n"), /Cards · 3\/5/);
 	assert.ok(findCustomizeRow(ui, "Card style: neon"));
 	assert.ok(!ui.overlayView!.render(90).some((line) => line.includes("▸ Card style: neon (current)")), "neon is not current without a saved preference");
 	assert.equal(existsSync(join(home, "card-style.json")), false, "highlighting never applies");
@@ -5588,9 +5588,15 @@ test("gentleShell draws the review preflight message as a Gentle card", (t) => {
 	assert.deepEqual(renderer(long, { expanded: false }, plainTheme).render(0), []);
 });
 
-test("the review preflight card paints the rose INFO frame (border) and title (accent)", () => {
+test("the review preflight card paints the rose INFO frame (border) and title (accent)", (t) => {
+	// Frame geometry belongs to the outlined styles; the assertion below is about
+	// the INFO tone roles, so pin the style instead of inheriting the default.
+	const found = cardStyle();
+	t.after(() => setCardStyle(found));
 	const { pi } = fakePi();
 	gentleShell(pi, {});
+	// The extension applies the resolved default on start, so pin the style after it.
+	setCardStyle(CARD_STYLE.NEON);
 	const renderer = renderers.get("gentle-pi.review-preflight")!;
 	const taggedTheme = { ...plainTheme, fg: (color: string, text: string) => `<${color}>${text}</${color}>` };
 	const message = { customType: "gentle-pi.review-preflight", content: "Receipt-driven development is enabled." };

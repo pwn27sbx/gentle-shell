@@ -45,7 +45,7 @@ At 140 columns or wider, fullscreen defaults to a live header over a transcript-
 ```
 
 - The header carries live session data: session identity on the left (brand, cwd, branch, dirty count, model · effort · profile) and the two live counters right-aligned (the context gauge and session cost). The effort reads `auto` for NaN models that manage their reasoning depth themselves (DeepSeek V4 Flash, Qwen 3.8 Flash, MiMo), with a one-time notice explaining that the selected level does not change the depth. It never shows the working/thinking state or extension statuses — those stay in the prompt indicator and the Status surface. When the terminal is too narrow for everything, segments give way in a fixed order — profile, then effort, then the whole cwd/branch/dirty group — before the counters are touched; below that, only the brand survives, and below that the header renders nothing.
-- The right rail scrolls **Status → Changes → Agents → TODO**. Cards cache their rendered content until their own digest or an explicit invalidation changes. `neon` keeps the rounded border and accent title; `float` uses a tone background, a full-height `▎` accent, one-column transparent margins, painted padding above and below, and a blank painted separator between heading and body. Warning/error/success panels retain their tone colors.
+- The right rail scrolls **Status → Changes → Agents → TODO**. Cards cache their rendered content until their own digest or an explicit invalidation changes. `neon` keeps the rounded border and accent title; `float` uses a tone background, a full-height `▎` accent, one-column transparent margins, painted padding above and below, and a blank painted separator between heading and body; `rule` draws no frame and no background at all — a single heading line and one `│` bar per body row, so the rail reads as a column of text. Warning/error/success panels retain their tone colors in `neon` and `float`, and their glyph color in `rule`.
 - The Status card carries Project (cwd, branch, session name, active profile), Changes, and Integrations (other extensions' statuses); its live digest detects changes without requiring an event. Model, effort, context, cost, and the per-model usage table live in the header instead — the header ticks every frame, so duplicating them in a card would just make that card repaint every frame too.
 - Gentle Agents follows TODO: while the fullscreen rail is showing, the Agents card moves into it and lists every shown task; without the rail (narrow fullscreen or regular mode) it stays above the editor. Its card has fixed right-aligned columns for `model · effort`, tokens, cost, and elapsed, each sized to the widest value among the shown tasks — so the numbers line up vertically even when one row's values are much shorter than another's. A queued task fills only the elapsed column with the word `queued`, leaving the other columns blank rather than overwriting the row.
 - The sidebar reuses its last frame until something it paints changes, so silent frames stay cheap; a per-section cache means one card's changing digest (or the header's) never forces an unrelated card to redraw.
@@ -63,7 +63,7 @@ The regular-mode compact bar replaces pi's three-line footer with a single line 
 - Statuses other extensions publish through `setStatus` are appended as trailing segments; the session name sits at the right edge.
 - On narrow terminals the session name is dropped first, then trailing segments, before the line is truncated.
 
-The prompt follows the selected card style. `neon` keeps pi's editor in its rounded frame:
+The prompt follows the selected card style; `rule` keeps the same outlined prompt as `neon`. `neon` keeps pi's editor in its rounded frame:
 
 ```text
 ╭─ ✿ working ──────────────────────────────────────────╮
@@ -199,7 +199,8 @@ Pick the conversation-card and shell-chrome style in `/gentle:customize` → **C
 | Style | Look |
 |-------|------|
 | `neon` | The outlined rounded card shown above. |
-| `float` (default) | A borderless panel on the tone's tool background (success/info, pending, error), with a tone-colored `▎` accent bar, a one-column margin on each side, a blank row above the heading and at the bottom, and a blank row between the heading and the body. |
+| `float` | A borderless panel on the tone's tool background (success/info, pending, error), with a tone-colored `▎` accent bar, a one-column margin on each side, a blank row above the heading and at the bottom, and a blank row between the heading and the body. |
+| `rule` (default) | No frame and no painted background: one heading line with the hint at its end, and every body row behind a tone-colored `│`. Docked panels keep no padding rows, so the heading is their first row. |
 
 ```text
  ▎
@@ -209,8 +210,14 @@ Pick the conversation-card and shell-chrome style in `/gentle:customize` → **C
  ▎
 ```
 
+```text
+✿ read a.ts · result previews + counts
+│ export const hero = 1;
+│ export const tag = "card";
+```
 - `float` applies to tool, Code and 🌹 cards, Agent result and stale cards, the review preflight reminder, the dev-binary notice, and the Agents, Todos and Status panels. The prompt and fullscreen header/footer use their specialized float chrome described above. The regular-mode one-line Status bar is unchanged.
-- A theme without a tool background, or a card narrower than 10 columns, falls back to `neon`. A malformed `card-style.json` reads as `float` and the panel refuses to overwrite it.
+- A theme without a tool background, or a card narrower than 10 columns, falls back to `neon` in `float` mode. A missing `card-style.json` resolves to `rule`; a malformed or unreadable one reads as `float` and the panel refuses to overwrite it.
+- `rule` covers conversation cards and the docked panels. The prompt and the fullscreen header/footer keep their outlined chrome, because their specialized `float` painting only applies to `float`. Switching to `rule` never moves a card, a panel or a row.
 
 ### Card content
 
