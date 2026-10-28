@@ -99,6 +99,14 @@ test("long Todo widgets stay bounded, scroll, resize and keep their collapse con
 			assert.ok(before.length <= 10, "card uses at most one third of terminal height");
 			const header = style === CARD_STYLE.FLOAT ? 1 : 0;
 			assert.match(before[header]!, /Todos ▾/);
+			if (component === rail) {
+				// The rail draws one physical row per task by design; the long title
+				// and note stay in the dock card, which is the surface that wraps.
+				assert.equal(before.filter((line) => /[◐○✓]/.test(line)).length, 2, "one row per task");
+				assert.ok(before.length <= 6, "heading, two one-line tasks and at most the chrome");
+				assert.match(before.join("\n"), /…/);
+				continue;
+			}
 			assert.equal(component.handleMouse?.({ type: "wheel", button: "none", wheelDelta: 10000, x: 5, y: header + 2, screenX: 5, screenY: 5, width: 40, height: before.length, shift: false, alt: false, ctrl: false })?.handled, true);
 			const after = component.render(40).map(stripAnsi);
 			assert.match(after[header]!, /Todos ▾/);
@@ -144,7 +152,9 @@ test("Todo keyboard scrolling targets the visible card after a cached sidebar br
 		gentleTodo(pi, {});
 		const { ctx, widgets } = fakeContext();
 		await fire("session_start", ctx);
-		await tools.get("todo")!.execute("write", { action: "write", tasks: [{ title: Array.from({ length: 100 }, (_, i) => `TITLE${i}`).join(" "), status: "in_progress" }] }, undefined, undefined, ctx);
+		// A list long enough to overflow the rail viewport: each task is one row now,
+		// so scrolling comes from list length instead of a single wrapped title.
+		await tools.get("todo")!.execute("write", { action: "write", tasks: Array.from({ length: 40 }, (_, i) => ({ title: `TITLE${i}`, status: i === 0 ? "in_progress" : "pending" })) }, undefined, undefined, ctx);
 		await fire("tool_execution_end", ctx, { toolName: "todo" });
 		const root = { render: () => [], invalidate() {}, [node]: () => ({ type: "vstack", entries: [] }) };
 		const tui = { mode: "fullscreen", terminal: { rows: 30, columns: 160 }, layoutRoot: root, requestRender() {} };
