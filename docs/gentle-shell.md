@@ -200,7 +200,7 @@ Pick the conversation-card and shell-chrome style in `/gentle:customize` → **C
 |-------|------|
 | `neon` | The outlined rounded card shown above. |
 | `float` | A borderless panel on the tone's tool background (success/info, pending, error), with a tone-colored `▎` accent bar, a one-column margin on each side, a blank row above the heading and at the bottom, and a blank row between the heading and the body. |
-| `rule` (default) | No frame and no painted background: one heading line with the hint at its end, and every body row behind a tone-colored `│`. Docked panels keep no padding rows, so the heading is their first row. |
+| `rule` (default) | No frame and no painted background: one heading line with the hint at its end, and every body row behind a `│`. Docked panels keep no padding rows, so the heading is their first row. The bar takes the tone's colour, except INFO: the whole rail is INFO, and the frame's `border` role is too dim there to read as a guide, so INFO bars use `muted`. |
 
 ```text
  ▎

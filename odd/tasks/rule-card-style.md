@@ -38,6 +38,10 @@ Delivery: `ask-on-risk`. Runner: `node --experimental-strip-types --test <file>`
   is captured at 242 and 160 columns with the audit harness outside the repository (no in-repo capture command
   exists, and the performance worker asserts identical screens across roots, so it cannot express base-vs-change).
 
+- **S9** Under `rule` the body bar for the INFO tone uses the `muted` role, because the whole rail is INFO and the
+  frame's `border` role measures 1.60:1 on the terminal canvas. `success`, `warning` and `error` keep their own
+  frame role, and `float`/`neon` rendering is unchanged. Documented in `docs/gentle-shell.md`.
+
 ## Tasks
 
 | ID | Spec | Route | Status | Commit |
@@ -48,6 +52,7 @@ Delivery: `ask-on-risk`. Runner: `node --experimental-strip-types --test <file>`
 | T4 | S6 | inline | done | 901d7709e |
 | T5 | S7 | inline | done | 4e87da6d7 |
 | T6 | S8 | inline | done — evidence in the vault `shots/impl-*.png` | 4e87da6d7..901d7709e |
+| T7 | S9 | inline | done — decided on the rendered comparison (`barra-riel.html`) | see Log L10 |
 
 Three commits carry six tasks because T1/T2/T5 landed in one reviewable slice (the style and the
 preference that selects it are one behavior) and T6 produces no source change of its own.
@@ -91,3 +96,9 @@ preference that selects it are one behavior) and T6 produces no source change of
   finish matches what was approved, but the rail loses its vertical cue. The transcript Todo card renders
   twice per write (also on the base commit, so pre-existing). Prose still stretches to the transcript width
   at 1440 columns (the audit's measure finding, not this branch).
+- L10 (owner, verbatim): "C". Decision: the rule gutter keeps the tone colours for success/warning/error and uses
+  `muted` for INFO. Evidence behind it: on the canvas sampled from the real capture (`#37392f`) the frame's
+  `border` role is 1.60:1, `dim` 2.42:1, `muted` 3.53:1; the rail is entirely INFO, so the bar was the only
+  structure it had and it was invisible. `dim` was tempting and rejected for landing at 2.42:1, still under the
+  3:1 asked of a non-text boundary. The uniform-grey option (D) was rejected because it also erases the amber
+  stale cue in Todos and the tone bars in the transcript.

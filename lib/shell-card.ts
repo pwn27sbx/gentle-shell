@@ -87,6 +87,17 @@ const FRAME_ROLE: Record<CardTone, string> = {
 	[CARD_TONE.WARNING]: "warning",
 	[CARD_TONE.ERROR]: "error",
 };
+// The rule style's gutter: the bar is the only structure a rule card keeps, so
+// INFO — the tone the whole rail uses — cannot take the frame's `border`, which
+// sits at 1.60:1 on the terminal canvas. Tones that carry a message keep their
+// own colour; INFO reads as a quiet guide instead of disappearing.
+const RULE_GUTTER_ROLE: Record<CardTone, string> = {
+	[CARD_TONE.INFO]: "muted",
+	[CARD_TONE.SUCCESS]: FRAME_ROLE[CARD_TONE.SUCCESS],
+	[CARD_TONE.WARNING]: FRAME_ROLE[CARD_TONE.WARNING],
+	[CARD_TONE.ERROR]: FRAME_ROLE[CARD_TONE.ERROR],
+};
+
 const TITLE_ROLE: Record<CardTone, string> = {
 	[CARD_TONE.INFO]: "accent",
 	[CARD_TONE.SUCCESS]: "success",
@@ -185,7 +196,7 @@ export function cardLine(text: string, tone: CardTone, theme: CardTheme, width: 
 	const targetWidth = Math.max(0, Math.floor(width));
 	if (targetWidth === 0) return "";
 	if (ruleStyle()) {
-		const bar = theme.fg(FRAME_ROLE[tone], "│");
+		const bar = theme.fg(RULE_GUTTER_ROLE[tone], "│");
 		if (targetWidth === 1) return bar;
 		return truncateToWidth(`${bar} ${truncateToWidth(text, targetWidth - 2, "…")}`, targetWidth, "…");
 	}

@@ -518,6 +518,36 @@ test("a rule heading keeps the hint last and drops it before displacing the titl
 	assert.ok(visibleWidth(narrow[0]!) <= 14, "the heading never exceeds the card width");
 });
 
+// The rail is all INFO, so under rule its gutter cannot take the frame's
+// `border`: on the terminal canvas that role sits at 1.60:1 and the bar
+// disappears. INFO reads as a quiet guide; a tone that carries a message keeps
+// its own colour.
+test("a rule gutter paints INFO with the muted role and keeps the tone colours", (t) => {
+	const found = cardStyle();
+	t.after(() => setCardStyle(found));
+	setCardStyle(CARD_STYLE.RULE);
+	const info = renderCard(card(), taggedTheme, 40, { expanded: true });
+	assert.ok(info[1]!.startsWith("<muted>│</muted>"), `INFO gutter is muted: ${info[1]}`);
+	const warned = renderCard(card({ tone: CARD_TONE.WARNING }), taggedTheme, 40, { expanded: true });
+	assert.ok(warned[1]!.startsWith("<warning>│</warning>"), `warning keeps its tone: ${warned[1]}`);
+	const failed = renderCard(card({ tone: CARD_TONE.ERROR }), taggedTheme, 40, { expanded: true });
+	assert.ok(failed[1]!.startsWith("<error>│</error>"), `error keeps its tone: ${failed[1]}`);
+});
+
+// A theme without a background makes float fall back to the outlined card, so
+// both framed styles here paint the frame's border side. The point is that the
+// rule gutter role never leaks into them.
+test("the framed rendering keeps the border side for INFO, so the rule gutter role stays local", (t) => {
+	const found = cardStyle();
+	t.after(() => setCardStyle(found));
+	for (const style of [CARD_STYLE.NEON, CARD_STYLE.FLOAT]) {
+		setCardStyle(style);
+		const lines = renderCard(card(), taggedTheme, 40, { expanded: true });
+		assert.ok(lines[1]!.startsWith("<border>│</border>"), `${style} keeps the border side: ${lines[1]}`);
+		assert.ok(!lines.some((line) => line.includes("<muted>│</muted>")), `${style} never paints a muted gutter`);
+	}
+});
+
 test("rule panels draw no float padding rows, so the heading is the first row", (t) => {
 	const found = cardStyle();
 	t.after(() => setCardStyle(found));
