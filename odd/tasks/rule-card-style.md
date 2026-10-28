@@ -2,7 +2,7 @@
 
 Objective: make the shell look lighter by giving it one chrome language — rule-and-text cards instead of framed,
 painted panels — while keeping the current distribution (right rail, header, footer, prompt) exactly where it is.
-Branch: `ui/rule-card-style` (worktree `/home/pwnsxb/Projects/forks/gentle-shell-worktrees/ui-rule`, base `main` 64b2fe479).
+Branch: `ui/rule-card-style` (a worktree beside the checkout, base `main` 64b2fe479).
 Delivery: `ask-on-risk`. Runner: `node --experimental-strip-types --test <file>` for focused tests,
 `node scripts/run-test-suite.mjs` for the suite, `node scripts/check-types.mjs` for the typecheck.
 

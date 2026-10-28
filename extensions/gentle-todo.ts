@@ -136,9 +136,11 @@ export default function gentleTodo(pi: ExtensionAPI, env: NodeJS.ProcessEnv = pr
 		current.host?.requestRender();
 	};
 
-	const todoCard = (current: TodoSession, theme: Parameters<typeof renderTodoCard>[1], host: "dock" | "rail"): Component & { dispose(): void; digest(): string; scrollBy(lines: number): void } => {
+	// `placement` is the dock-or-rail choice; `host` keeps meaning the TUI, as
+	// it does for the rest of this extension.
+	const todoCard = (current: TodoSession, theme: Parameters<typeof renderTodoCard>[1], placement: "dock" | "rail"): Component & { dispose(): void; digest(): string; scrollBy(lines: number): void } => {
 		// The dock reserves an extra row; the rail draws every task on one line.
-		const spacer = host === "dock";
+		const spacer = placement === "dock";
 		let hovered = false;
 		let body: string[] = [];
 		let collapsed = current.collapsed;
@@ -165,7 +167,7 @@ export default function gentleTodo(pi: ExtensionAPI, env: NodeJS.ProcessEnv = pr
 					collapseKey,
 					hovered,
 					scrollable: true,
-					singleLine: host === "rail",
+					singleLine: placement === "rail",
 				});
 				if (collapsed !== current.collapsed) {
 					collapsed = current.collapsed;

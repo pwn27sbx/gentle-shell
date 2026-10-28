@@ -496,7 +496,9 @@ test("a call card awaits its result until pi finishes the row or a result render
 
 // The rule style keeps the same layout and drops the frame: one heading line,
 // one bar per body row, no painted background.
-test("a rule card draws one heading line, a bar per body row and no frame", () => {
+test("a rule card draws one heading line, a bar per body row and no frame", (t) => {
+	const found = cardStyle();
+	t.after(() => setCardStyle(found));
 	setCardStyle(CARD_STYLE.RULE);
 	const lines = renderCard(card(), plainTheme, 40, { expanded: true });
 	assert.equal(lines[0], "✿ Gentle AI · review preflight");
@@ -504,7 +506,9 @@ test("a rule card draws one heading line, a bar per body row and no frame", () =
 	assert.ok(!lines.some((line) => /[╭╮╰╯]/.test(line)), "no frame glyphs anywhere");
 });
 
-test("a rule heading keeps the hint last and drops it before displacing the title", () => {
+test("a rule heading keeps the hint last and drops it before displacing the title", (t) => {
+	const found = cardStyle();
+	t.after(() => setCardStyle(found));
 	setCardStyle(CARD_STYLE.RULE);
 	const wide = renderCard(card({ title: "bash" }), plainTheme, 60, { expanded: true, hint: "ctrl+o to expand" });
 	assert.ok(wide[0]!.endsWith("ctrl+o to expand"), wide[0]);
@@ -514,7 +518,9 @@ test("a rule heading keeps the hint last and drops it before displacing the titl
 	assert.ok(visibleWidth(narrow[0]!) <= 14, "the heading never exceeds the card width");
 });
 
-test("rule panels draw no float padding rows, so the heading is the first row", () => {
+test("rule panels draw no float padding rows, so the heading is the first row", (t) => {
+	const found = cardStyle();
+	t.after(() => setCardStyle(found));
 	setCardStyle(CARD_STYLE.RULE);
 	assert.equal(panelHeaderRow(plainTheme, 40), 0);
 	assert.equal(panelExtraRows(plainTheme, 40), 0);
